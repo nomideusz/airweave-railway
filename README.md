@@ -1,6 +1,6 @@
 # Deploy and Host Airweave on Railway
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/airweave?utm_medium=integration&utm_source=button&utm_campaign=airweave)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/airweave?referralCode=sLjDXb&utm_medium=integration&utm_source=button&utm_campaign=airweave)
 
 [Airweave](https://airweave.ai/) is the open-source context retrieval layer for AI agents. Connect Notion, Slack, GitHub, Google Drive, Gmail, Jira, Linear, HubSpot, Salesforce, databases and 50+ other apps; Airweave syncs them into collections and exposes one search API (instant, classic and agentic tiers) that agents, RAG pipelines and MCP clients can query. This template runs the full self-hosted stack: API, sync worker, Temporal, the Vespa search engine, Svix webhooks, Postgres and Redis, behind a password-protected gateway.
 
