@@ -1,0 +1,684 @@
+{
+  "services": {
+    "1fff2187-7b6e-4fb5-9312-3daf6252758c": {
+      "icon": "https://raw.githubusercontent.com/nomideusz/airweave-railway/main/icon.svg",
+      "name": "Airweave",
+      "build": {},
+      "deploy": {
+        "startCommand": null,
+        "healthcheckPath": "/healthz",
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+      },
+      "source": {
+        "repo": "https://github.com/nomideusz/airweave-railway",
+        "rootDirectory": "/gateway"
+      },
+      "networking": {
+        "serviceDomains": {
+          "<hasDomain>": {}
+        }
+      },
+      "volumeMounts": {},
+      "variables": {
+        "PORT": {
+          "defaultValue": "8080",
+          "description": "Port the gateway listens on - leave as is",
+          "isOptional": false
+        },
+        "AIRWEAVE_USERNAME": {
+          "defaultValue": "admin",
+          "description": "Username for signing in to the Airweave web app",
+          "isOptional": false
+        },
+        "AIRWEAVE_PASSWORD": {
+          "defaultValue": "${{secret(24, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Auto-generated password for the Airweave web app (HTTP basic auth)",
+          "isOptional": false
+        },
+        "AIRWEAVE_API_KEY": {
+          "defaultValue": "aw_${{secret(40, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Auto-generated API key: send it as the X-API-Key header (SDKs, MCP, curl) to reach /api without the password",
+          "isOptional": false
+        },
+        "BACKEND_UPSTREAM": {
+          "defaultValue": "${{Backend.RAILWAY_PRIVATE_DOMAIN}}:8001",
+          "description": "Airweave API on the private network",
+          "isOptional": false
+        }
+      }
+    },
+    "e85326c2-d2ee-4327-988f-e29f488a81c8": {
+      "icon": "https://raw.githubusercontent.com/nomideusz/airweave-railway/main/icon.svg",
+      "name": "Backend",
+      "build": {},
+      "deploy": {
+        "startCommand": "uvicorn airweave.main:app --host 0.0.0.0 --port 8001",
+        "healthcheckPath": "/health/ready",
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+      },
+      "source": {
+        "image": "ghcr.io/airweave-ai/airweave-backend:v0.9.73"
+      },
+      "networking": {
+        "serviceDomains": {}
+      },
+      "volumeMounts": {},
+      "variables": {
+        "PORT": {
+          "defaultValue": "8001",
+          "description": "Port the API listens on - leave as is",
+          "isOptional": false
+        },
+        "ENVIRONMENT": {
+          "defaultValue": "self-hosted",
+          "description": "Airweave's self-hosted mode: bring-your-own OAuth apps for OAuth sources, local file storage",
+          "isOptional": false
+        },
+        "AUTH_ENABLED": {
+          "defaultValue": "false",
+          "description": "Airweave's own login needs an Auth0 tenant; off here, the Airweave gateway's password and API key protect the API instead",
+          "isOptional": false
+        },
+        "ANALYTICS_ENABLED": {
+          "defaultValue": "false",
+          "description": "Send anonymous usage analytics to Airweave's PostHog - off by default",
+          "isOptional": false
+        },
+        "FIRST_SUPERUSER": {
+          "defaultValue": "admin@example.org",
+          "description": "Email of the built-in admin account all requests act as (shown in the app; any valid address)",
+          "isOptional": false
+        },
+        "FIRST_SUPERUSER_PASSWORD": {
+          "defaultValue": "${{secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Auto-generated password of the built-in admin record (required by Airweave, not used to sign in)",
+          "isOptional": false
+        },
+        "ENCRYPTION_KEY": {
+          "defaultValue": "${{secret(43, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_\")}}=",
+          "description": "Fernet key that encrypts stored source credentials. BACK IT UP - changing it makes every connected source unreadable",
+          "isOptional": false
+        },
+        "STATE_SECRET": {
+          "defaultValue": "${{secret(48, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Signs OAuth state tokens when connecting sources",
+          "isOptional": false
+        },
+        "MISTRAL_API_KEY": {
+          "defaultValue": "",
+          "description": "Mistral API key (required): embeddings (mistral-embed), OCR of PDFs and images, and the classic/agentic search LLM. Get one at console.mistral.ai",
+          "isOptional": false
+        },
+        "DENSE_EMBEDDER": {
+          "defaultValue": "mistral_embed",
+          "description": "Embedding model: mistral_embed (1024 dims), openai_text_embedding_3_small (1536) or openai_text_embedding_3_large (3072). Fixed after the first sync",
+          "isOptional": false
+        },
+        "EMBEDDING_DIMENSIONS": {
+          "defaultValue": "${{Vespa.EMBEDDING_DIMENSIONS}}",
+          "description": "Embedding size, set on the Vespa service so the search schema matches",
+          "isOptional": false
+        },
+        "SPARSE_EMBEDDER": {
+          "defaultValue": "fastembed_bm25",
+          "description": "Keyword (BM25) embedder, runs locally",
+          "isOptional": false
+        },
+        "LLM_FALLBACK_CHAIN": {
+          "defaultValue": "mistral:mistral-large,anthropic:claude-sonnet-4.6,together:zai-glm-5",
+          "description": "Search LLM chain (classic/agentic tiers); entries without an API key are skipped",
+          "isOptional": false
+        },
+        "OPENAI_API_KEY": {
+          "defaultValue": "",
+          "description": "Optional: OpenAI key, only if you switch DENSE_EMBEDDER to an OpenAI model before the first deploy",
+          "isOptional": true
+        },
+        "ANTHROPIC_API_KEY": {
+          "defaultValue": "",
+          "description": "Optional: Anthropic key, fallback LLM for classic and agentic search",
+          "isOptional": true
+        },
+        "TOGETHER_API_KEY": {
+          "defaultValue": "",
+          "description": "Optional: Together AI key, fallback LLM for classic and agentic search",
+          "isOptional": true
+        },
+        "POSTGRES_HOST": {
+          "defaultValue": "${{Postgres.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Postgres on the private network",
+          "isOptional": false
+        },
+        "POSTGRES_PORT": {
+          "defaultValue": "5432",
+          "description": "Postgres port",
+          "isOptional": false
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "${{Postgres.POSTGRES_DB}}",
+          "description": "Database name",
+          "isOptional": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "${{Postgres.POSTGRES_USER}}",
+          "description": "Database user",
+          "isOptional": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{Postgres.POSTGRES_PASSWORD}}",
+          "description": "Database password",
+          "isOptional": false
+        },
+        "REDIS_HOST": {
+          "defaultValue": "${{Redis.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Redis on the private network",
+          "isOptional": false
+        },
+        "REDIS_PORT": {
+          "defaultValue": "6379",
+          "description": "Redis port",
+          "isOptional": false
+        },
+        "REDIS_PASSWORD": {
+          "defaultValue": "${{Redis.REDIS_PASSWORD}}",
+          "description": "Redis password",
+          "isOptional": false
+        },
+        "TEMPORAL_HOST": {
+          "defaultValue": "${{Temporal.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Temporal (sync orchestration) on the private network",
+          "isOptional": false
+        },
+        "TEMPORAL_PORT": {
+          "defaultValue": "7233",
+          "description": "Temporal gRPC port",
+          "isOptional": false
+        },
+        "VESPA_URL": {
+          "defaultValue": "http://${{Vespa.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Vespa search index on the private network",
+          "isOptional": false
+        },
+        "VESPA_PORT": {
+          "defaultValue": "8081",
+          "description": "Vespa query and document API port",
+          "isOptional": false
+        },
+        "SVIX_URL": {
+          "defaultValue": "http://${{Svix.RAILWAY_PRIVATE_DOMAIN}}:8071",
+          "description": "Svix webhook server on the private network",
+          "isOptional": false
+        },
+        "SVIX_JWT_SECRET": {
+          "defaultValue": "${{Svix.SVIX_JWT_SECRET}}",
+          "description": "Shared secret for the Svix API",
+          "isOptional": false
+        },
+        "API_FULL_URL": {
+          "defaultValue": "https://${{Airweave.RAILWAY_PUBLIC_DOMAIN}}/api",
+          "description": "Public API URL (OAuth callbacks, links) - change the domain if you add a custom one",
+          "isOptional": false
+        },
+        "APP_FULL_URL": {
+          "defaultValue": "https://${{Airweave.RAILWAY_PUBLIC_DOMAIN}}",
+          "description": "Public app URL - change the domain if you add a custom one",
+          "isOptional": false
+        },
+        "STORAGE_BACKEND": {
+          "defaultValue": "filesystem",
+          "description": "Raw sync data is written by the Worker to its volume",
+          "isOptional": false
+        },
+        "STORAGE_PATH": {
+          "defaultValue": "/data/airweave-storage",
+          "description": "Where raw sync data lives (the Worker's volume)",
+          "isOptional": false
+        },
+        "RAILWAY_HEALTHCHECK_TIMEOUT_SEC": {
+          "defaultValue": "600",
+          "description": "The first boot runs 150+ database migrations before the health check can pass",
+          "isOptional": false
+        }
+      }
+    },
+    "bde69f30-38e3-4068-a787-1e58e28c64c8": {
+      "icon": "https://raw.githubusercontent.com/nomideusz/airweave-railway/main/icon.svg",
+      "name": "Worker",
+      "build": {},
+      "deploy": {
+        "startCommand": "python -m airweave.domains.temporal.worker",
+        "healthcheckPath": "/health",
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+      },
+      "source": {
+        "image": "ghcr.io/airweave-ai/airweave-backend:v0.9.73"
+      },
+      "networking": {
+        "serviceDomains": {}
+      },
+      "volumeMounts": {
+        "82397615-585f-4379-9b86-a73318231367": {
+          "mountPath": "/data"
+        }
+      },
+      "variables": {
+        "PORT": {
+          "defaultValue": "8888",
+          "description": "Worker health endpoint port, used by Railway's health check - leave as is",
+          "isOptional": false
+        },
+        "ENVIRONMENT": {
+          "defaultValue": "${{Backend.ENVIRONMENT}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "AUTH_ENABLED": {
+          "defaultValue": "${{Backend.AUTH_ENABLED}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "ANALYTICS_ENABLED": {
+          "defaultValue": "${{Backend.ANALYTICS_ENABLED}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "FIRST_SUPERUSER": {
+          "defaultValue": "${{Backend.FIRST_SUPERUSER}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "FIRST_SUPERUSER_PASSWORD": {
+          "defaultValue": "${{Backend.FIRST_SUPERUSER_PASSWORD}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "ENCRYPTION_KEY": {
+          "defaultValue": "${{Backend.ENCRYPTION_KEY}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "STATE_SECRET": {
+          "defaultValue": "${{Backend.STATE_SECRET}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "OPENAI_API_KEY": {
+          "defaultValue": "${{Backend.OPENAI_API_KEY}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "DENSE_EMBEDDER": {
+          "defaultValue": "${{Backend.DENSE_EMBEDDER}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "EMBEDDING_DIMENSIONS": {
+          "defaultValue": "${{Backend.EMBEDDING_DIMENSIONS}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "SPARSE_EMBEDDER": {
+          "defaultValue": "${{Backend.SPARSE_EMBEDDER}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "ANTHROPIC_API_KEY": {
+          "defaultValue": "${{Backend.ANTHROPIC_API_KEY}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "TOGETHER_API_KEY": {
+          "defaultValue": "${{Backend.TOGETHER_API_KEY}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "MISTRAL_API_KEY": {
+          "defaultValue": "${{Backend.MISTRAL_API_KEY}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "LLM_FALLBACK_CHAIN": {
+          "defaultValue": "${{Backend.LLM_FALLBACK_CHAIN}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "POSTGRES_HOST": {
+          "defaultValue": "${{Backend.POSTGRES_HOST}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "POSTGRES_PORT": {
+          "defaultValue": "${{Backend.POSTGRES_PORT}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "${{Backend.POSTGRES_DB}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "${{Backend.POSTGRES_USER}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{Backend.POSTGRES_PASSWORD}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "REDIS_HOST": {
+          "defaultValue": "${{Backend.REDIS_HOST}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "REDIS_PORT": {
+          "defaultValue": "${{Backend.REDIS_PORT}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "REDIS_PASSWORD": {
+          "defaultValue": "${{Backend.REDIS_PASSWORD}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "TEMPORAL_HOST": {
+          "defaultValue": "${{Backend.TEMPORAL_HOST}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "TEMPORAL_PORT": {
+          "defaultValue": "${{Backend.TEMPORAL_PORT}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "VESPA_URL": {
+          "defaultValue": "${{Backend.VESPA_URL}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "VESPA_PORT": {
+          "defaultValue": "${{Backend.VESPA_PORT}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "SVIX_URL": {
+          "defaultValue": "${{Backend.SVIX_URL}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "SVIX_JWT_SECRET": {
+          "defaultValue": "${{Backend.SVIX_JWT_SECRET}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "API_FULL_URL": {
+          "defaultValue": "${{Backend.API_FULL_URL}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "APP_FULL_URL": {
+          "defaultValue": "${{Backend.APP_FULL_URL}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "STORAGE_BACKEND": {
+          "defaultValue": "${{Backend.STORAGE_BACKEND}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "STORAGE_PATH": {
+          "defaultValue": "${{Backend.STORAGE_PATH}}",
+          "description": "Same as the Backend service",
+          "isOptional": false
+        },
+        "RAILWAY_HEALTHCHECK_TIMEOUT_SEC": {
+          "defaultValue": "300",
+          "description": "Time for the worker to connect to Temporal",
+          "isOptional": false
+        }
+      }
+    },
+    "36ad0100-1c6b-4320-8db3-2f7414ab7e93": {
+      "icon": "https://raw.githubusercontent.com/nomideusz/airweave-railway/main/icons/temporal.svg",
+      "name": "Temporal",
+      "build": {},
+      "deploy": {
+        "startCommand": "/bin/bash -c \"(until temporal operator search-attribute list --namespace default 2>/dev/null | grep -qw SyncId; do sleep 5; temporal operator search-attribute create --namespace default --name SyncId --type Keyword >/dev/null 2>&1; done; echo SyncId search attribute registered) & exec /etc/temporal/entrypoint.sh autosetup\"",
+        "healthcheckPath": "/api/v1/system-info",
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+      },
+      "source": {
+        "image": "temporalio/auto-setup:1.29.7"
+      },
+      "networking": {
+        "serviceDomains": {}
+      },
+      "volumeMounts": {},
+      "variables": {
+        "PORT": {
+          "defaultValue": "7243",
+          "description": "Temporal frontend HTTP API port, used by Railway's health check - leave as is",
+          "isOptional": false
+        },
+        "DB": {
+          "defaultValue": "postgres12",
+          "description": "Temporal persistence driver for Postgres",
+          "isOptional": false
+        },
+        "DB_PORT": {
+          "defaultValue": "5432",
+          "description": "Postgres port",
+          "isOptional": false
+        },
+        "POSTGRES_SEEDS": {
+          "defaultValue": "${{Postgres.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Postgres host (Temporal creates its own temporal and temporal_visibility databases)",
+          "isOptional": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "${{Postgres.POSTGRES_USER}}",
+          "description": "Postgres user",
+          "isOptional": false
+        },
+        "POSTGRES_PWD": {
+          "defaultValue": "${{Postgres.POSTGRES_PASSWORD}}",
+          "description": "Postgres password",
+          "isOptional": false
+        },
+        "BIND_ON_IP": {
+          "defaultValue": "::",
+          "description": "Listen on IPv6 and IPv4 for Railway's private network",
+          "isOptional": false
+        },
+        "TEMPORAL_BROADCAST_ADDRESS": {
+          "defaultValue": "127.0.0.1",
+          "description": "Single node: cluster members find each other on loopback",
+          "isOptional": false
+        },
+        "TEMPORAL_ADDRESS": {
+          "defaultValue": "127.0.0.1:7233",
+          "description": "Address the setup CLI uses inside the container",
+          "isOptional": false
+        },
+        "SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES": {
+          "defaultValue": "true",
+          "description": "Skip Temporal's sample search attributes; Airweave's SyncId is registered by the start command",
+          "isOptional": false
+        }
+      }
+    },
+    "65068edc-e562-40c8-8740-f934a6658445": {
+      "icon": "https://raw.githubusercontent.com/nomideusz/airweave-railway/main/icons/vespa.svg",
+      "name": "Vespa",
+      "build": {},
+      "deploy": {
+        "startCommand": null,
+        "healthcheckPath": "/state/v1/health",
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+      },
+      "source": {
+        "repo": "https://github.com/nomideusz/airweave-railway",
+        "rootDirectory": "/vespa"
+      },
+      "networking": {
+        "serviceDomains": {}
+      },
+      "volumeMounts": {
+        "a53d9f18-482c-484b-9907-406ecc4ec7d5": {
+          "mountPath": "/opt/vespa/var"
+        }
+      },
+      "variables": {
+        "PORT": {
+          "defaultValue": "8081",
+          "description": "Vespa query and document API port, used by Railway's health check - leave as is",
+          "isOptional": false
+        },
+        "EMBEDDING_DIMENSIONS": {
+          "defaultValue": "1024",
+          "description": "Vector size of the search schema: 1024 for mistral_embed, 1536 for openai_text_embedding_3_small, 3072 for _large. Set before the first deploy; fixed afterwards",
+          "isOptional": false
+        },
+        "RAILWAY_HEALTHCHECK_TIMEOUT_SEC": {
+          "defaultValue": "600",
+          "description": "Vespa starts its config server, deploys Airweave's schemas and starts the content node before it is healthy",
+          "isOptional": false
+        }
+      }
+    },
+    "2eee9dd0-73a9-4c5e-b3a8-9f56c7394963": {
+      "icon": "https://raw.githubusercontent.com/nomideusz/airweave-railway/main/icons/svix.svg",
+      "name": "Svix",
+      "build": {},
+      "deploy": {
+        "startCommand": null,
+        "healthcheckPath": null,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+      },
+      "source": {
+        "image": "svix/svix-server:v1.101.0"
+      },
+      "networking": {
+        "serviceDomains": {}
+      },
+      "volumeMounts": {},
+      "variables": {
+        "SVIX_JWT_SECRET": {
+          "defaultValue": "${{secret(48, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Auto-generated secret for the Svix API (shared with the Backend)",
+          "isOptional": false
+        },
+        "SVIX_DB_DSN": {
+          "defaultValue": "postgresql://${{Postgres.POSTGRES_USER}}:${{Postgres.POSTGRES_PASSWORD}}@${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/svix",
+          "description": "Svix database (created by Postgres on first boot)",
+          "isOptional": false
+        },
+        "SVIX_REDIS_DSN": {
+          "defaultValue": "redis://default:${{Redis.REDIS_PASSWORD}}@${{Redis.RAILWAY_PRIVATE_DOMAIN}}:6379",
+          "description": "Redis for Svix's delivery queue",
+          "isOptional": false
+        },
+        "SVIX_QUEUE_TYPE": {
+          "defaultValue": "redis",
+          "description": "Delivery queue backend",
+          "isOptional": false
+        },
+        "SVIX_CACHE_TYPE": {
+          "defaultValue": "none",
+          "description": "Upstream's setting: the memory cache delivers to stale endpoint lists",
+          "isOptional": false
+        },
+        "WAIT_FOR": {
+          "defaultValue": "true",
+          "description": "Wait for Postgres and Redis before starting",
+          "isOptional": false
+        }
+      }
+    },
+    "ff3b34d8-d9a1-4bc3-bc1f-627abc1c6a74": {
+      "icon": "https://devicons.railway.app/i/postgresql.svg",
+      "name": "Postgres",
+      "build": {},
+      "deploy": {
+        "startCommand": "/bin/sh -c \"echo 'CREATE DATABASE svix;' > /docker-entrypoint-initdb.d/10-svix.sql && exec docker-entrypoint.sh postgres -c max_connections=200\"",
+        "healthcheckPath": null,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+      },
+      "source": {
+        "image": "postgres:16.15"
+      },
+      "networking": {
+        "serviceDomains": {}
+      },
+      "volumeMounts": {
+        "b1453ca3-e088-4dba-919a-84442b737220": {
+          "mountPath": "/var/lib/postgresql/data"
+        }
+      },
+      "variables": {
+        "POSTGRES_DB": {
+          "defaultValue": "airweave",
+          "description": "Database name",
+          "isOptional": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "airweave",
+          "description": "Database user",
+          "isOptional": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Auto-generated database password",
+          "isOptional": false
+        },
+        "PGDATA": {
+          "defaultValue": "/var/lib/postgresql/data/pgdata",
+          "description": "Data subdirectory - keeps Postgres happy on Railway volumes",
+          "isOptional": false
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "60",
+          "description": "Time for Postgres to shut down cleanly on redeploy",
+          "isOptional": false
+        }
+      }
+    },
+    "bdc27182-bd1d-4efe-a63c-f5bf9c5914f4": {
+      "icon": "https://devicons.railway.app/i/redis.svg",
+      "name": "Redis",
+      "build": {},
+      "deploy": {
+        "startCommand": "/bin/sh -c \"chown -R redis:redis /data && exec docker-entrypoint.sh redis-server --requirepass $REDIS_PASSWORD --appendonly yes\"",
+        "healthcheckPath": null,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+      },
+      "source": {
+        "image": "redis:8.10.2-alpine"
+      },
+      "networking": {
+        "serviceDomains": {}
+      },
+      "volumeMounts": {
+        "73f0cc63-73be-4119-850a-03687c49d718": {
+          "mountPath": "/data"
+        }
+      },
+      "variables": {
+        "REDIS_PASSWORD": {
+          "defaultValue": "${{secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Auto-generated Redis password",
+          "isOptional": false
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <!-- Vespa mark from vespa-engine/documentation (assets/logos/logo.svg) -->
+  <rect width="100" height="100" rx="20" fill="#ffffff"/>
+  <g transform="translate(18 26) scale(1.18)" fill="#2E2F27">
+    <path d="M10.6196 25.6114H44.0268L33.3973 36.1572H-0.0100098V21.0917L10.6196 10.5459V25.6114Z"/>
+    <path d="M54.6565 0V15.0655L44.0269 25.6113V10.5458H10.6196L21.2492 0H54.6565Z"/>
+  </g>
+</svg>

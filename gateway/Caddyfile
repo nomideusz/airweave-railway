@@ -1,0 +1,46 @@
+# Self-hosted Airweave has no login of its own (AUTH_ENABLED=false makes every API
+# call act as the admin), so this gateway is the lock: a browser signs in with
+# HTTP basic auth, scripts and SDKs send the generated key as X-API-Key.
+{
+	admin off
+	auto_https off
+	# Keep the gateway credentials out of Railway's logs (Caddy logs request headers on proxy errors).
+	log {
+		format filter {
+			wrap json
+			fields {
+				request>headers>X-Api-Key delete
+				request>headers>Authorization delete
+			}
+		}
+	}
+}
+
+:{$PORT:8080} {
+	# Railway's health check, unauthenticated.
+	@health path /healthz
+	respond @health "ok" 200
+
+	@locked {
+		not path /healthz
+		not header X-API-Key {$AIRWEAVE_API_KEY}
+	}
+	basic_auth @locked {
+		{$AIRWEAVE_USERNAME:admin} {$AIRWEAVE_PASSWORD_HASH}
+	}
+
+	# API: same origin, /api prefix stripped (the frontend's default API_URL).
+	handle_path /api/* {
+		reverse_proxy {$BACKEND_UPSTREAM} {
+			# Search answers stream as server-sent events.
+			flush_interval -1
+		}
+	}
+
+	# Web app: single-page app, unknown paths fall back to index.html.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

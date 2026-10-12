@@ -1,0 +1,9 @@
+{
+  "name": "Airweave | Context Retrieval & Search for AI Agents",
+  "short_name": "Airweave",
+  "description": "Sync 50+ apps into one search layer your AI agents can query",
+  "category": "AI/ML",
+  "image": "https://raw.githubusercontent.com/nomideusz/airweave-railway/main/icon.svg",
+  "card_desc": "Airweave: the open-source context retrieval layer for AI agents. Syncs Notion, Slack, GitHub, Drive and 50+ more apps into Vespa hybrid search, with Temporal workers and a password-protected gateway.",
+  "deploy_marker": "nomideusz/airweave-railway"
+}
