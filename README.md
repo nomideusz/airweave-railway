@@ -66,7 +66,7 @@ curl -H "X-API-Key: $AIRWEAVE_API_KEY" https://<your-domain>/api/collections/
 
 **Analytics.** Airweave sends anonymous usage analytics to its PostHog by default; this template sets `ANALYTICS_ENABLED=false`.
 
-**Resources.** Expect about 4 GB of RAM at idle. Vespa uses about 3 GB of that, the Backend and Worker about 400-450 MB each, and Postgres, Temporal, Svix, Redis and the gateway about 280 MB together. That needs a Hobby or Pro plan. Vespa's memory grows with the amount of synced data.
+**Resources.** Expect about 4.7 GB of RAM at idle (measured on Railway). Vespa uses about 3.4 GB of that (its query container reserves a fixed 1.5 GB Java heap), the Backend and Worker about 450-500 MB each, and Postgres, Temporal, Svix, Redis and the gateway about 450 MB together. That needs a Hobby or Pro plan. Vespa's memory grows with the amount of synced data.
 
 ## Why Deploy Airweave on Railway?
 
