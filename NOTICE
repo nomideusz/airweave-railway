@@ -1,0 +1,7 @@
+The MIT licence in LICENSE covers the files written for this Railway template.
+
+These files come from another project and stay under that project's licence:
+
+- vespa/app/ (the whole directory)
+
+Source: https://github.com/airweave-ai/airweave (vespa/app)
